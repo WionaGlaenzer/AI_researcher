@@ -1,0 +1,457 @@
+{
+  "prompt": "how to model antibodies more effectively?",
+  "config": {
+    "model": "models/gemini-2.0-flash-lite",
+    "embed_model": "models/text-embedding-004",
+    "chunk_size": 1200,
+    "chunk_overlap": 200,
+    "top_k_snippets": 4,
+    "paper_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+    "max_total_chunks": 3000,
+    "max_chars_per_file": 300000
+  },
+  "messages": [
+    {
+      "role": "Innovator",
+      "turn": 0,
+      "content": "Here are some insights on modeling antibodies more effectively, grounded in the provided evidence:\n\n*   **Leverage Antibody-Specific Language Models:** Explore the use of language models specifically trained on antibody sequences to better understand affinity maturation (S#4). Models trained on all proteins may not capture antibody-specific features effectively (S#4).\n*   **Utilize Next-Generation Sequencing:** Employ next-generation sequencing to identify antibodies produced by B-cells from blood or lymph samples (S#1).\n*   **Focus on Antigen Affinity:** Recognize that a significant portion of antibodies within an immune response exhibit antigen affinity (S#1).",
+      "snippets": [
+        {
+          "rank": 1,
+          "label": "S#1",
+          "chunk_index": 2,
+          "approx_char_start": 2000,
+          "score": 0.6702,
+          "preview": " provide samples of B-cells from blood or lymph, and the antibodies produced by these B-cells are identified via next-generation sequencing [5]. During an immune response, as many as half of the antib",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 2
+          }
+        },
+        {
+          "rank": 2,
+          "label": "S#2",
+          "chunk_index": 14,
+          "approx_char_start": 14000,
+          "score": 0.6453,
+          "preview": "nce on machine learning, pages 2127–2136. PMLR, 2018. [8] M Gordon Joyce, Masaru Kanekiyo, Ling Xu, Christian Biertümpfel, Jeffrey C Boyington, Stephanie Moquin, Wei Shi, Xueling Wu, Yongping Yang, Zh",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 14
+          }
+        },
+        {
+          "rank": 3,
+          "label": "S#3",
+          "chunk_index": 0,
+          "approx_char_start": 0,
+          "score": 0.6451,
+          "preview": "arXiv:2112.07782v1 [q-bio.BM] 14 Dec 2021 Deciphering antibody affinity maturation with language models and weakly supervised learning Jeffrey A. Ruffolo Johns Hopkins University Baltimore, MD 21218 j",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 0
+          }
+        },
+        {
+          "rank": 4,
+          "label": "S#4",
+          "chunk_index": 3,
+          "approx_char_start": 3000,
+          "score": 0.633,
+          "preview": " trained on all proteins may be poorly suited for capturing specific features of antibody sequence evolution. In this work, we explore the use of an antibody-specific language model for understanding ",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 3
+          }
+        }
+      ]
+    },
+    {
+      "role": "Critic",
+      "turn": 1,
+      "content": "**Unsupported Assumptions/Weaknesses:**\n\n*   **Assumption:** Antibody-specific language models are *always* superior. Evidence (S#4) only suggests they *may* be better, not a definitive conclusion.\n*   **Confound:** The cited evidence (S#4) focuses on HIV-1 antibodies. Generalizing to all antibody types might be premature.\n\n**Improvements:**\n\n1.  **Qualify the claim:** Instead of stating that antibody-specific language models are *better*, acknowledge that they *may* be more effective and that further research is needed to confirm this.\n2.  **Expand Scope:** Broaden the evidence base by including studies on diverse antibody types beyond HIV-1.\n\n**Retrieval Filters/Query Terms:**\n\n*   `\"antibody language model\" AND (performance OR comparison OR validation)`\n*   `\"antibody affinity maturation\" AND (different antibody types OR diverse antigens)`\n*   `\"antibody-specific language model\" AND (generalization OR limitations)`",
+      "snippets": [
+        {
+          "rank": 1,
+          "label": "S#1",
+          "chunk_index": 2,
+          "approx_char_start": 2000,
+          "score": 0.8382,
+          "preview": " provide samples of B-cells from blood or lymph, and the antibodies produced by these B-cells are identified via next-generation sequencing [5]. During an immune response, as many as half of the antib",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 2
+          }
+        },
+        {
+          "rank": 2,
+          "label": "S#2",
+          "chunk_index": 0,
+          "approx_char_start": 0,
+          "score": 0.7967,
+          "preview": "arXiv:2112.07782v1 [q-bio.BM] 14 Dec 2021 Deciphering antibody affinity maturation with language models and weakly supervised learning Jeffrey A. Ruffolo Johns Hopkins University Baltimore, MD 21218 j",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 0
+          }
+        },
+        {
+          "rank": 3,
+          "label": "S#3",
+          "chunk_index": 3,
+          "approx_char_start": 3000,
+          "score": 0.7676,
+          "preview": " trained on all proteins may be poorly suited for capturing specific features of antibody sequence evolution. In this work, we explore the use of an antibody-specific language model for understanding ",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 3
+          }
+        },
+        {
+          "rank": 4,
+          "label": "S#4",
+          "chunk_index": 4,
+          "approx_char_start": 4000,
+          "score": 0.7132,
+          "preview": "language models [6], we began by looking for global trends within individual repertoires. We considered immune repertoire samples from four donors who developed neutralizing antibodies against HIV-1 [",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 4
+          }
+        }
+      ]
+    },
+    {
+      "role": "Innovator",
+      "turn": 2,
+      "content": "Here's an improved final report synthesizing the provided evidence, along with a falsifiable hypothesis and an evidence table:\n\n**Improved Final Report: Modeling Antibodies More Effectively**\n\nThe development of effective antibody models is crucial for understanding immune responses, disease development, and accelerating the creation of therapeutic antibodies (S#2). Computer-aided antibody engineering offers a promising avenue to reduce the reliance on time-consuming wet-lab experiments (S#2). Language models, particularly those designed specifically for antibodies, are being explored to decipher antibody affinity maturation (S#1).\n\nDuring an immune response, a significant portion of the antibody repertoire can exhibit antigen affinity (S#4). This affinity is a key factor in the effectiveness of antibodies. Research utilizes next-generation sequencing to identify antibodies produced by B-cells (S#4).\n\n**Falsifiable Hypothesis:**\n\nAntibody-specific language models, when trained on datasets of affinity-matured antibodies, will demonstrate significantly improved predictive accuracy in identifying high-affinity antibody variants compared to general protein language models, as measured by a cross-validation experiment using binding affinity data.\n\n**Evidence Table:**\n\n| Claim                                                                                                                               | Snippet Ref. |\n| :---------------------------------------------------------------------------------------------------------------------------------- | :----------- |\n| Modeling antibodies effectively is important for understanding immune responses and developing therapeutics.                        | S#2          |\n| Computer-aided antibody engineering aims to improve antibody development.                                                               | S#2          |\n| Language models are being used to study antibody affinity maturation.                                                               | S#1          |\n| A significant portion of antibodies in an immune response exhibit antigen affinity.                                                 | S#4          |\n| Next-generation sequencing is used to identify antibodies produced by B-cells.                                                      | S#4          |",
+      "snippets": [
+        {
+          "rank": 1,
+          "label": "S#1",
+          "chunk_index": 0,
+          "approx_char_start": 0,
+          "score": 0.8009,
+          "preview": "arXiv:2112.07782v1 [q-bio.BM] 14 Dec 2021 Deciphering antibody affinity maturation with language models and weakly supervised learning Jeffrey A. Ruffolo Johns Hopkins University Baltimore, MD 21218 j",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 0
+          }
+        },
+        {
+          "rank": 2,
+          "label": "S#2",
+          "chunk_index": 96,
+          "approx_char_start": 96000,
+          "score": 0.7909,
+          "preview": " understanding immune responses, disease development, and may accelerate the development of therapeutic antibodies for broad-spectrum disease treatment. To alleviate the burden of time-consuming wet-l",
+          "source": {
+            "doc_id": "arxiv::2411.15215v1",
+            "origin": "arxiv",
+            "title": "S$^2$ALM: Sequence-Structure Pre-trained Large Language Model for Comprehensive Antibody Representation Learning",
+            "arxiv_id": "2411.15215v1",
+            "url": "http://arxiv.org/abs/2411.15215v1",
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/arxiv_output/txt/2411.15215v1_S2ALM_Sequence-Structure_Pre-trained_Large_Language_Model_for_Comprehensive_Antibody_Representation_Learning.txt",
+            "chunk_local_idx": 4
+          }
+        },
+        {
+          "rank": 3,
+          "label": "S#3",
+          "chunk_index": 224,
+          "approx_char_start": 224000,
+          "score": 0.789,
+          "preview": "hillips, Katherine R Lawrence, Alief Moulana, Thomas Dupic, Jeffrey Chang, Milo S Johnson, Ivana Cvijovic, Thierry Mora, Aleksandra M Walczak, and Michael M Desai. Binding affinity landscapes constrai",
+          "source": {
+            "doc_id": "arxiv::2506.04235v2",
+            "origin": "arxiv",
+            "title": "AbBiBench: A Benchmark for Antibody Binding Affinity Maturation and Design",
+            "arxiv_id": "2506.04235v2",
+            "url": "http://arxiv.org/abs/2506.04235v2",
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/arxiv_output/txt/2506.04235v2_AbBiBench_A_Benchmark_for_Antibody_Binding_Affinity_Maturation_and_Design.txt",
+            "chunk_local_idx": 52
+          }
+        },
+        {
+          "rank": 4,
+          "label": "S#4",
+          "chunk_index": 2,
+          "approx_char_start": 2000,
+          "score": 0.7802,
+          "preview": " provide samples of B-cells from blood or lymph, and the antibodies produced by these B-cells are identified via next-generation sequencing [5]. During an immune response, as many as half of the antib",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 2
+          }
+        }
+      ],
+      "refined_query": "Compare the performance of antibody-specific language models to general protein language models across diverse antibody types and antigens, focusing on affinity maturation and identifying any generalization limitations."
+    }
+  ],
+  "evidence_log": [
+    {
+      "turn": 0,
+      "phase": "innovator_initial",
+      "query": "how to model antibodies more effectively?",
+      "top_snippets": [
+        {
+          "chunk_index": 2,
+          "score": 0.6702,
+          "approx_char_start": 2000,
+          "preview": " provide samples of B-cells from blood or lymph, and the antibodies produced by these B-cells are identified via next-generation sequencing [5]. During an immune response, as many as half of the antib",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 2
+          }
+        },
+        {
+          "chunk_index": 14,
+          "score": 0.6453,
+          "approx_char_start": 14000,
+          "preview": "nce on machine learning, pages 2127–2136. PMLR, 2018. [8] M Gordon Joyce, Masaru Kanekiyo, Ling Xu, Christian Biertümpfel, Jeffrey C Boyington, Stephanie Moquin, Wei Shi, Xueling Wu, Yongping Yang, Zh",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 14
+          }
+        },
+        {
+          "chunk_index": 0,
+          "score": 0.6451,
+          "approx_char_start": 0,
+          "preview": "arXiv:2112.07782v1 [q-bio.BM] 14 Dec 2021 Deciphering antibody affinity maturation with language models and weakly supervised learning Jeffrey A. Ruffolo Johns Hopkins University Baltimore, MD 21218 j",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 0
+          }
+        },
+        {
+          "chunk_index": 3,
+          "score": 0.633,
+          "approx_char_start": 3000,
+          "preview": " trained on all proteins may be poorly suited for capturing specific features of antibody sequence evolution. In this work, we explore the use of an antibody-specific language model for understanding ",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 3
+          }
+        }
+      ]
+    },
+    {
+      "turn": 1,
+      "phase": "critic_feedback",
+      "query": "Here are some insights on modeling antibodies more effectively, grounded in the provided evidence:\n\n*   **Leverage Antibody-Specific Language Models:** Explore the use of language models specifically trained on antibody sequences to better understand affinity maturation (S#4). Models trained on all proteins may not capture antibody-specific features effectively (S#4).\n*   **Utilize Next-Generation Sequencing:** Employ next-generation sequencing to identify antibodies produced by B-cells from blood or lymph samples (S#1).\n*   **Focus on Antigen Affinity:** Recognize that a significant portion of antibodies within an immune response exhibit antigen affinity (S#1).",
+      "top_snippets": [
+        {
+          "chunk_index": 2,
+          "score": 0.8382,
+          "approx_char_start": 2000,
+          "preview": " provide samples of B-cells from blood or lymph, and the antibodies produced by these B-cells are identified via next-generation sequencing [5]. During an immune response, as many as half of the antib",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 2
+          }
+        },
+        {
+          "chunk_index": 0,
+          "score": 0.7967,
+          "approx_char_start": 0,
+          "preview": "arXiv:2112.07782v1 [q-bio.BM] 14 Dec 2021 Deciphering antibody affinity maturation with language models and weakly supervised learning Jeffrey A. Ruffolo Johns Hopkins University Baltimore, MD 21218 j",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 0
+          }
+        },
+        {
+          "chunk_index": 3,
+          "score": 0.7676,
+          "approx_char_start": 3000,
+          "preview": " trained on all proteins may be poorly suited for capturing specific features of antibody sequence evolution. In this work, we explore the use of an antibody-specific language model for understanding ",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 3
+          }
+        },
+        {
+          "chunk_index": 4,
+          "score": 0.7132,
+          "approx_char_start": 4000,
+          "preview": "language models [6], we began by looking for global trends within individual repertoires. We considered immune repertoire samples from four donors who developed neutralizing antibodies against HIV-1 [",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 4
+          }
+        }
+      ]
+    },
+    {
+      "turn": 2,
+      "phase": "arxiv_fetch",
+      "query": "Compare the performance of antibody-specific language models to general protein language models across diverse antibody types and antigens, focusing on affinity maturation and identifying any generalization limitations.",
+      "fetched_count": 5,
+      "ingested_txt_chunks": 395,
+      "ingested_abstract_chunks": 0,
+      "chunks_before": 23,
+      "chunks_after": 418,
+      "error": null
+    },
+    {
+      "turn": 2,
+      "phase": "refined_retrieval",
+      "query": "Compare the performance of antibody-specific language models to general protein language models across diverse antibody types and antigens, focusing on affinity maturation and identifying any generalization limitations.",
+      "top_snippets": [
+        {
+          "chunk_index": 0,
+          "score": 0.8009,
+          "approx_char_start": 0,
+          "preview": "arXiv:2112.07782v1 [q-bio.BM] 14 Dec 2021 Deciphering antibody affinity maturation with language models and weakly supervised learning Jeffrey A. Ruffolo Johns Hopkins University Baltimore, MD 21218 j",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 0
+          }
+        },
+        {
+          "chunk_index": 96,
+          "score": 0.7909,
+          "approx_char_start": 96000,
+          "preview": " understanding immune responses, disease development, and may accelerate  the development of therapeutic antibodies for broad-spectrum disease treatment.  To alleviate the burden of time-consuming wet",
+          "source": {
+            "doc_id": "arxiv::2411.15215v1",
+            "origin": "arxiv",
+            "title": "S$^2$ALM: Sequence-Structure Pre-trained Large Language Model for Comprehensive Antibody Representation Learning",
+            "arxiv_id": "2411.15215v1",
+            "url": "http://arxiv.org/abs/2411.15215v1",
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/arxiv_output/txt/2411.15215v1_S2ALM_Sequence-Structure_Pre-trained_Large_Language_Model_for_Comprehensive_Antibody_Representation_Learning.txt",
+            "chunk_local_idx": 4
+          }
+        },
+        {
+          "chunk_index": 224,
+          "score": 0.789,
+          "approx_char_start": 224000,
+          "preview": "hillips, Katherine R Lawrence, Alief Moulana, Thomas Dupic, Jeffrey Chang, Milo S Johnson, Ivana Cvijovic, Thierry Mora, Aleksandra M Walczak, and Michael M Desai. Binding affinity landscapes constrai",
+          "source": {
+            "doc_id": "arxiv::2506.04235v2",
+            "origin": "arxiv",
+            "title": "AbBiBench: A Benchmark for Antibody Binding Affinity Maturation and Design",
+            "arxiv_id": "2506.04235v2",
+            "url": "http://arxiv.org/abs/2506.04235v2",
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/arxiv_output/txt/2506.04235v2_AbBiBench_A_Benchmark_for_Antibody_Binding_Affinity_Maturation_and_Design.txt",
+            "chunk_local_idx": 52
+          }
+        },
+        {
+          "chunk_index": 2,
+          "score": 0.7802,
+          "approx_char_start": 2000,
+          "preview": " provide samples of B-cells from blood or lymph, and the antibodies produced by these B-cells are identified via next-generation sequencing [5]. During an immune response, as many as half of the antib",
+          "source": {
+            "doc_id": "seed::/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "origin": "seed",
+            "title": "paper.txt",
+            "arxiv_id": null,
+            "url": null,
+            "txt_path": "/Users/wglaenzer/Documents/Privat/AI_researcher/paper.txt",
+            "chunk_local_idx": 2
+          }
+        }
+      ]
+    }
+  ],
+  "refined_query": "Compare the performance of antibody-specific language models to general protein language models across diverse antibody types and antigens, focusing on affinity maturation and identifying any generalization limitations.",
+  "final_report": "Here's an improved final report synthesizing the provided evidence, along with a falsifiable hypothesis and an evidence table:\n\n**Improved Final Report: Modeling Antibodies More Effectively**\n\nThe development of effective antibody models is crucial for understanding immune responses, disease development, and accelerating the creation of therapeutic antibodies (S#2). Computer-aided antibody engineering offers a promising avenue to reduce the reliance on time-consuming wet-lab experiments (S#2). Language models, particularly those designed specifically for antibodies, are being explored to decipher antibody affinity maturation (S#1).\n\nDuring an immune response, a significant portion of the antibody repertoire can exhibit antigen affinity (S#4). This affinity is a key factor in the effectiveness of antibodies. Research utilizes next-generation sequencing to identify antibodies produced by B-cells (S#4).\n\n**Falsifiable Hypothesis:**\n\nAntibody-specific language models, when trained on datasets of affinity-matured antibodies, will demonstrate significantly improved predictive accuracy in identifying high-affinity antibody variants compared to general protein language models, as measured by a cross-validation experiment using binding affinity data.\n\n**Evidence Table:**\n\n| Claim                                                                                                                               | Snippet Ref. |\n| :---------------------------------------------------------------------------------------------------------------------------------- | :----------- |\n| Modeling antibodies effectively is important for understanding immune responses and developing therapeutics.                        | S#2          |\n| Computer-aided antibody engineering aims to improve antibody development.                                                               | S#2          |\n| Language models are being used to study antibody affinity maturation.                                                               | S#1          |\n| A significant portion of antibodies in an immune response exhibit antigen affinity.                                                 | S#4          |\n| Next-generation sequencing is used to identify antibodies produced by B-cells.                                                      | S#4          |"
+}

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Two-Agent Message Flow (runtime JSON)</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  :root { --bg:#0b1020; --card:#141a2e; --text:#e7ecff; --muted:#96a0c6;
+          --innov:#6ea8fe; --critic:#ffb86c; --report:#9be7a5; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+  .container { max-width:1100px; margin:24px auto; padding:16px; }
+  .panel { background:var(--card); border:1px solid #22305c; border-radius:16px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,.35); }
+  .row { display:grid; grid-template-columns: 2fr 1fr; gap:16px; }
+  .title { font-size:22px; font-weight:650; margin:0 0 6px; }
+  .meta { color:var(--muted); font-size:13px; }
+  .legend { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0 10px; }
+  .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#10162c; border:1px solid #24315c; color:#c9d4ff; font-size:13px; }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .controls { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .controls input[type="range"] { width:200px; }
+  button { background:#1a2550; color:var(--text); border:1px solid #3b4ea3; border-radius:10px; padding:8px 12px; cursor:pointer; }
+  button:hover { filter:brightness(1.08); }
+  .tooltip { position:absolute; pointer-events:none; background:rgba(16,22,44,.96); color:var(--text);
+             padding:10px 12px; border:1px solid #2a386e; border-radius:12px; font-size:12.5px; max-width:360px; line-height:1.35; opacity:0; }
+  .report { white-space:pre-wrap; font-size:13.5px; max-height:420px; overflow:auto; }
+  .uploader { display:flex; gap:10px; align-items:center; margin: 0 0 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="panel" style="margin-bottom:12px;">
+    <div class="title">Two-Agent Message Flow (runtime JSON)</div>
+    <div class="uploader">
+      <input id="file" type="file" accept="application/json"/>
+      <span class="meta">Upload your <code>run_log.json</code></span>
+      <div style="flex:1"></div>
+      <div id="status" class="meta">Waiting for file…</div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="panel">
+      <div class="legend">
+        <span class="pill"><span class="dot" style="background:var(--innov);"></span> Innovator</span>
+        <span class="pill"><span class="dot" style="background:var(--critic);"></span> Critic</span>
+        <span class="pill"><span class="dot" style="background:var(--report);"></span> Report</span>
+        <span class="pill"><span id="msgCount">Messages: 0</span></span>
+      </div>
+      <svg id="stage" width="100%" height="520"></svg>
+      <div class="controls">
+        <button id="play">Play</button>
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
+        <input id="speed" type="range" min="0.5" max="3" value="1" step="0.1"/>
+        <label for="speed">Speed</label>
+        <div style="flex:1"></div>
+        <div id="prompt" class="meta"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="title">Final Report</div>
+      <div id="report" class="report"><i>—</i></div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip" class="tooltip"></div>
+
+<script>
+const W = 800, H = 520;
+const pos = { Innovator:{x:160,y:H/2}, Critic:{x:W-160,y:H/2}, Report:{x:W/2,y:100} };
+const color = { Innovator:"#6ea8fe", Critic:"#ffb86c", Report:"#9be7a5" };
+
+const svg = d3.select("#stage").attr("viewBox",[0,0,W,H]);
+const g = svg.append("g");
+
+// agent nodes
+["Innovator","Critic","Report"].forEach(name=>{
+  const p=pos[name];
+  g.append("circle").attr("cx",p.x).attr("cy",p.y).attr("r",36)
+    .attr("fill",color[name]).attr("fill-opacity",.18)
+    .attr("stroke",color[name]).attr("stroke-width",2);
+  g.append("text").attr("x",p.x).attr("y",p.y+5).attr("text-anchor","middle")
+    .attr("font-size",14).attr("fill","#dbe5ff").text(name);
+});
+
+const tip = d3.select("#tooltip");
+function showTip(html,x,y){ tip.html(html).style("left",(x+12)+"px").style("top",(y+12)+"px").transition().duration(120).style("opacity",1); }
+function hideTip(){ tip.transition().duration(150).style("opacity",0); }
+
+let flows=[], idx=0, playing=false;
+
+function toFlows(messages){
+  const role = m => m.role || "Unknown";
+  const arr=[];
+  for(let i=0;i<messages.length;i++){
+    const m = messages[i];
+    arr.push({
+      turn: m.turn ?? i,
+      src: role(m),
+      dst: (i<messages.length-1 ? role(messages[i+1]) : "Report"),
+      snippetCount: (m.snippets||[]).length,
+      content: (m.content||"").slice(0,300)
+    });
+  }
+  return arr;
+}
+
+function setStatus(txt){ document.getElementById("status").textContent = txt; }
+
+function clearPackets(){
+  g.selectAll(".pkt,.echo").remove();
+}
+
+function step(){
+  if(idx>=flows.length){ playing=false; setStatus("Done"); return; }
+  const f = flows[idx];
+  const src = pos[f.src] || pos.Innovator;
+  const dst = pos[f.dst] || pos.Critic;
+  const c = color[f.src] || "#9aa7c7";
+  const pkt = g.append("circle").attr("class","pkt")
+    .attr("cx",src.x).attr("cy",src.y).attr("r",6).attr("fill",c)
+    .attr("stroke","#e8edff").attr("stroke-width",.6)
+    .style("filter","drop-shadow(0 0 6px rgba(255,255,255,0.4))");
+
+  const speed = +document.getElementById("speed").value;
+  const dur = 1600 / speed;
+
+  pkt.on("mousemove",(ev)=>{
+    showTip(`<b>Turn</b>: ${f.turn}<br><b>${f.src} → ${f.dst}</b><br><b>Snippets</b>: ${f.snippetCount}<br><div style='margin-top:6px;color:#9fb2ff'>${escapeHtml(f.content)}</div>`, ev.pageX, ev.pageY);
+  });
+  pkt.on("mouseout", hideTip);
+
+  pkt.transition().duration(dur).ease(d3.easeCubicInOut)
+     .attr("cx",dst.x).attr("cy",dst.y)
+     .on("end", ()=>{
+       g.append("circle").attr("class","echo").attr("cx",dst.x).attr("cy",dst.y).attr("r",3.2)
+        .attr("fill",c).attr("opacity",.7);
+       pkt.transition().duration(150).style("opacity",0).remove();
+     });
+
+  setStatus(`Animating turn ${f.turn}: ${f.src} → ${f.dst}`);
+  idx++;
+}
+
+function loop(){
+  if(!playing) return;
+  step();
+  const gap = 500 / (+document.getElementById("speed").value);
+  setTimeout(loop, gap + 200);
+}
+
+document.getElementById("play").onclick = ()=>{ if(!playing){ playing=true; setStatus("Playing"); loop(); } };
+document.getElementById("pause").onclick = ()=>{ playing=false; setStatus("Paused"); };
+document.getElementById("reset").onclick = ()=>{ playing=false; idx=0; clearPackets(); setStatus("Reset"); };
+
+document.getElementById("file").addEventListener("change", async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const text = await file.text();
+  const data = JSON.parse(text);
+  const messages = data.messages || [];
+  flows = toFlows(messages);
+  document.getElementById("msgCount").textContent = `Messages: ${messages.length}`;
+  document.getElementById("prompt").textContent = `Prompt: ${data.prompt || ""}`;
+  document.getElementById("report").textContent = data.final_report || "—";
+  idx = 0; clearPackets();
+  setStatus(flows.length ? "Loaded. Press Play." : "No messages in JSON.");
+});
+
+// simple HTML escaper for tooltip
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+</script>
+</body>
+</html>

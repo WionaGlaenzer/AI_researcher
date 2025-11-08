@@ -4,24 +4,24 @@ A research project focused on AI and machine learning.
 
 ## Description
 
-This repository contains research, experiments, and implementations related to artificial intelligence and machine learning.
+This repository contains research, experiments, and implementations related to artificial intelligence and machine learning, with a focus on using Google's Gemini API.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+ (if applicable)
-- [Add other prerequisites as needed]
+- Python 3.8+
+- A Google API key for Gemini (get one at [Google AI Studio](https://makersuite.google.com/app/apikey))
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/AI_researcher.git
+git clone https://github.com/WionaGlaenzer/AI_researcher.git
 cd AI_researcher
 
-# Install dependencies (if applicable)
-# pip install -r requirements.txt
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -37,15 +37,9 @@ AI_researcher/
 └── [your project files]
 ```
 
-## Contributing
+## Setup
+export GEMINI_API_KEY="api-key"
+export GEMINI_MODEL="models/gemini-2.0-flash-lite"
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-[Add your license here]
-
-## Contact
-
-[Add your contact information here]
-
+Run streamlit app: streamlit run viz_run_log_streamlit.py
+Run two agent lab: python two_agent_lab_gemini.py --prompt "how to model antibodies more effectively?" --paper paper.txt

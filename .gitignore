@@ -67,3 +67,4 @@ logs/
 .DS_Store
 Thumbs.db
 
+arxiv_output/
