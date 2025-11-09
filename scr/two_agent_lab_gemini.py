@@ -40,21 +40,29 @@ def should_continue(state: Dict[str, Any]) -> str:
 
 def build_graph():
     g = StateGraph(dict)
+
     g.add_node("innovator", innovator_node)
     g.add_node("critic", critic_node)
     g.add_node("refine_and_synthesize", refine_and_synthesize_node)
+
     g.set_entry_point("innovator")
+
+    # Always go innovator -> critic
     g.add_edge("innovator", "critic")
-    g.add_edge("critic", "refine_and_synthesize")
-    # Conditional edge: loop back or end
+
+    # Loop between critic and innovator until should_continue says "end"
     g.add_conditional_edges(
-        "refine_and_synthesize",
-        should_continue,
+        "critic",
+        should_continue,  # returns "continue" or "end"
         {
-            "continue": "innovator",  # Loop back to innovator for another iteration
-            "end": END
-        }
+            "continue": "innovator",             # keep looping
+            "end": "refine_and_synthesize",      # exit loop to final step
+        },
     )
+
+    # After the final step, terminate
+    g.add_edge("refine_and_synthesize", END)
+
     return g.compile()
 
 # -----------------------
