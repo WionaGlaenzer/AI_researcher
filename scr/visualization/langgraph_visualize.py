@@ -4,11 +4,13 @@ LangGraph visualization for the AI research agent system.
 
 What it does:
   1) Builds the complete research agent graph (including keyword extraction and arXiv tool calls)
-  2) Saves Mermaid PNG (API) to: graph_mermaid_api.png
+  2) Saves Mermaid visualization as PDF to: graph_mermaid_api.pdf
 """
 
 import sys
 from typing import TypedDict, Literal
+from PIL import Image
+import io
 
 # --- LangGraph imports ---
 try:
@@ -129,23 +131,42 @@ def build_graph():
     return g.compile()
 
 # ---- Visualization helper ----
-MERMAID_API_PNG_PATH = "graph_mermaid_api.png"
+MERMAID_API_PDF_PATH = "graph_mermaid_api.pdf"
 
-def write_mermaid_api_png(app, path: str) -> None:
-    """Generate Mermaid PNG using the API method (requires network access)."""
+def write_mermaid_api_pdf(app, path: str) -> None:
+    """Generate Mermaid PDF using the API method (requires network access)."""
     try:
+        # Get PNG from Mermaid API
         png_bytes = app.get_graph().draw_mermaid_png(draw_method=MermaidDrawMethod.API)
-        with open(path, "wb") as f:
-            f.write(png_bytes)
+        
+        # Convert PNG to PDF using PIL
+        img = Image.open(io.BytesIO(png_bytes))
+        # Convert to RGB if necessary (PDF doesn't support RGBA)
+        if img.mode == 'RGBA':
+            # Create white background
+            rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+            rgb_img.paste(img, mask=img.split()[3])  # Use alpha channel as mask
+            img = rgb_img
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Upscale image for higher resolution (2x for 300 DPI equivalent)
+        # This ensures crisp text and lines in the PDF
+        upscale_factor = 2
+        new_size = (img.size[0] * upscale_factor, img.size[1] * upscale_factor)
+        img_high_res = img.resize(new_size, Image.Resampling.LANCZOS)
+        
+        # Save as PDF with high resolution (300 DPI)
+        img_high_res.save(path, 'PDF', resolution=300.0)
         print(f"✓ Wrote {path}")
     except Exception as e:
-        print(f"✗ Mermaid API PNG failed (needs network access): {e}", file=sys.stderr)
+        print(f"✗ Mermaid API PDF failed (needs network access): {e}", file=sys.stderr)
         return
 
 # ---- Main ----
 def main():
     app = build_graph()
-    write_mermaid_api_png(app, MERMAID_API_PNG_PATH)
+    write_mermaid_api_pdf(app, MERMAID_API_PDF_PATH)
 
 if __name__ == "__main__":
     main()

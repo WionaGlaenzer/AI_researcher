@@ -16,9 +16,15 @@ def innovator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     max_iterations = state.get("max_iterations", 1)
     current_turn = state.get("turn", 0)
     
+    # Check if this is the final iteration (will go to synthesize after critic)
+    # After this innovator->critic cycle, iteration will be incremented, so check if next iteration would be >= max
+    is_final_iteration = (current_iteration + 1) >= max_iterations
+    
     print(f"\n{'='*60}")
     print(f"[FLOW] Turn {current_turn} - INNOVATOR NODE")
     print(f"[FLOW] Iteration {current_iteration + 1}/{max_iterations}")
+    if is_final_iteration:
+        print(f"[FLOW] Final iteration - will fetch from arXiv")
     print(f"{'='*60}")
     
     # Determine phase based on iteration
@@ -27,17 +33,110 @@ def innovator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     else:
         state["phase"] = f"innovator_iteration_{current_iteration + 1}"
     
-    # For subsequent iterations, include context from previous synthesis
-    query = state["research_prompt"]
-    if state["messages"]:
-        # Use the latest synthesis as context for retrieval
-        last_synthesis = next(
-            (m["content"] for m in reversed(state["messages"]) 
-             if m.get("role") == "Innovator" and "refined_query" in m),
-            None
+    # Check if we have critic feedback from previous iteration - if so, fetch new papers
+    messages = state.get("messages", [])
+    last_innov_msg = next((m for m in reversed(messages) if m.get("role") == "Innovator"), None)
+    last_crit_msg = next((m for m in reversed(messages) if m.get("role") == "Critic"), None)
+    
+    # Fetch new papers if we have both innovator and critic messages (i.e., not the first iteration)
+    if last_innov_msg and last_crit_msg:
+        # --- write refined query based on critic feedback ---
+        state["phase"] = "refine_query"
+        last_innov = last_innov_msg["content"]
+        last_crit = last_crit_msg["content"]
+        
+        # Truncate inputs for query refinement
+        innov_truncated = last_innov[:2000] + ("..." if len(last_innov) > 2000 else "")
+        crit_truncated = last_crit[:2000] + ("..." if len(last_crit) > 2000 else "")
+        
+        print(f"[INNOVATOR] Creating refined query from previous draft and critic feedback (iteration {current_iteration + 1})")
+        refined_query = call_llm(
+            REFINER_SYS,
+            (
+                f"Original research prompt: {state['research_prompt']}\n\n"
+                f"Latest Innovator draft:\n{innov_truncated}\n\n"
+                f"Critic feedback:\n{crit_truncated}\n\n"
+                f"Write a single refined retrieval query:"
+            ),
+            agent_name="REFINER"
         )
-        if last_synthesis:
-            query = f"{state['research_prompt']}\n\nPrevious synthesis: {last_synthesis[:500]}"
+        state["refined_query"] = refined_query
+        print(f"[INNOVATOR] Refined query: {refined_query}")
+        
+        # --- fetch from arXiv at each iteration when critic feedback is available ---
+        fetched = []
+        fetch_error = None
+        try:
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            arxiv_output_dir = os.path.join(project_root, "data", "arxiv_output")
+            run_id = state.get("run_id")
+            
+            fetched = get_more_papers_from_arxiv(
+                refined_query,
+                outdir=arxiv_output_dir,
+                max_results=25,
+                candidates=25,
+                run_id=run_id
+            )
+        except Exception as e:
+            fetch_error = str(e)
+        
+        # --- ingest .txt (with caps) ---
+        before_chunks = len(state["paper_chunks"])
+        ingested_txt = 0
+        try:
+            txts = [p["txt_path"] for p in fetched if p.get("txt_path")]
+            ingest_txts_into_state(
+                state,
+                txts,
+                chunk_text_fn=chunk_text,
+                embed_text_fn=embed_text,
+                max_total_chunks=MAX_TOTAL_CHUNKS,
+                max_chars_per_file=MAX_CHARS_PER_FILE,
+            )
+            ingested_txt = len(state["paper_chunks"]) - before_chunks
+            append_meta_for_txts(state, fetched, ingested_txt)
+        except Exception as e:
+            state["evidence_log"].append({
+                "turn": state["turn"],
+                "phase": "ingest_error",
+                "query": refined_query,
+                "error": str(e),
+            })
+        
+        # --- fallback: ingest abstracts if no txt ingested ---
+        ingested_abs = 0
+        if ingested_txt == 0 and fetched:
+            ingested_abs = ingest_abstracts_into_state(state, fetched)
+        
+        after_chunks = len(state["paper_chunks"])
+        state["evidence_log"].append({
+            "turn": state["turn"],
+            "phase": "arxiv_fetch",
+            "query": refined_query,
+            "fetched_count": len(fetched),
+            "ingested_txt_chunks": ingested_txt,
+            "ingested_abstract_chunks": ingested_abs,
+            "chunks_before": before_chunks,
+            "chunks_after": after_chunks,
+            "error": fetch_error,
+        })
+        
+        # Use refined query for retrieval
+        query = refined_query
+        print(f"[INNOVATOR] Fetched {len(fetched)} new papers based on critic feedback")
+    else:
+        # First iteration - no critic feedback yet, use research prompt
+        query = state["research_prompt"]
+        if state.get("messages"):
+            # Use the latest synthesis as context for retrieval
+            last_synthesis = next(
+                (m["content"] for m in reversed(state["messages"]) 
+                 if m.get("role") == "Innovator" and "refined_query" in m),
+                None
+            )
+            if last_synthesis:
+                query = f"{state['research_prompt']}\n\nPrevious synthesis: {last_synthesis[:500]}"
     
     print(f"[INNOVATOR] Retrieving snippets with query: {query[:100]}...")
     snips = retrieve_snippets(state, query)
@@ -62,13 +161,18 @@ def innovator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     out = call_llm(INNOVATOR_SYS, user, agent_name="INNOVATOR")
 
-    state["messages"].append({
+    message_data = {
         "role": "Innovator",
         "turn": state["turn"],
         "iteration": current_iteration,
         "content": out,
         "snippets": build_snippet_meta(snips),
-    })
+    }
+    # Include refined query if it was created (for any iteration with critic feedback)
+    if state.get("refined_query"):
+        message_data["refined_query"] = state["refined_query"]
+    
+    state["messages"].append(message_data)
     state["turn"] += 1
     print(f"[FLOW] Turn {current_turn} complete - Moving to CRITIC")
     return state
@@ -116,97 +220,14 @@ def refine_and_synthesize_node(state: Dict[str, Any]) -> Dict[str, Any]:
     current_iteration = state.get("iteration", 0)
     
     print(f"\n{'='*60}")
-    print(f"[FLOW] Turn {current_turn} - REFINE & SYNTHESIZE NODE")
+    print(f"[FLOW] Turn {current_turn} - SYNTHESIZE NODE")
     print(f"[FLOW] Iteration {current_iteration + 1}")
     print(f"{'='*60}")
     
-    # --- write refined query ---
-    state["phase"] = "refine_query"
-    last_innov = next(m for m in reversed(state["messages"]) if m["role"] == "Innovator")["content"]
-    last_crit  = next(m for m in reversed(state["messages"]) if m["role"] == "Critic")["content"]
+    # Get refined query from innovator (should be set in the final innovator pass)
+    refined_query = state.get("refined_query", state["research_prompt"])
     
-    # Truncate inputs for query refinement
-    innov_truncated = last_innov[:2000] + ("..." if len(last_innov) > 2000 else "")
-    crit_truncated = last_crit[:2000] + ("..." if len(last_crit) > 2000 else "")
-
-    print(f"[REFINER] Creating refined query from innovator ({len(last_innov):,} chars) and critic ({len(last_crit):,} chars)")
-    refined_query = call_llm(
-        REFINER_SYS,
-        (
-            f"Original research prompt: {state['research_prompt']}\n\n"
-            f"Latest Innovator draft:\n{innov_truncated}\n\n"
-            f"Critic feedback:\n{crit_truncated}\n\n"
-            f"Write a single refined retrieval query:"
-        ),
-        agent_name="REFINER"
-    )
-    state["refined_query"] = refined_query
-    print(f"[REFINER] Refined query: {refined_query}")
-
-    # --- fetch from arXiv ---
-    fetched = []
-    fetch_error = None
-    try:
-        # Get project root (parent of scr/)
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        arxiv_output_dir = os.path.join(project_root, "data", "arxiv_output")
-        
-        # Get run_id from state if available
-        run_id = state.get("run_id")
-        
-        fetched = get_more_papers_from_arxiv(
-            refined_query,
-            outdir=arxiv_output_dir,
-            max_results=5,
-            candidates=25,
-            run_id=run_id
-        )
-    except Exception as e:
-        fetch_error = str(e)
-
-    # --- ingest .txt (with caps) ---
-    before_chunks = len(state["paper_chunks"])
-    ingested_txt = 0
-    try:
-        txts = [p["txt_path"] for p in fetched if p.get("txt_path")]
-        ingest_txts_into_state(
-            state,
-            txts,
-            chunk_text_fn=chunk_text,
-            embed_text_fn=embed_text,
-            max_total_chunks=MAX_TOTAL_CHUNKS,
-            max_chars_per_file=MAX_CHARS_PER_FILE,
-        )
-        ingested_txt = len(state["paper_chunks"]) - before_chunks
-        # Add matching metadata for those newly-added chunks
-        append_meta_for_txts(state, fetched, ingested_txt)
-    except Exception as e:
-        state["evidence_log"].append({
-            "turn": state["turn"],
-            "phase": "ingest_error",
-            "query": refined_query,
-            "error": str(e),
-        })
-
-    # --- fallback: ingest abstracts if no txt ingested ---
-    ingested_abs = 0
-    if ingested_txt == 0 and fetched:
-        ingested_abs = ingest_abstracts_into_state(state, fetched)
-
-    after_chunks = len(state["paper_chunks"])
-    state["evidence_log"].append({
-        "turn": state["turn"],
-        "phase": "arxiv_fetch",
-        "query": refined_query,
-        "fetched_count": len(fetched),
-        "ingested_txt_chunks": ingested_txt,
-        "ingested_abstract_chunks": ingested_abs,
-        "chunks_before": before_chunks,
-        "chunks_after": after_chunks,
-        "error": fetch_error,
-    })
-
-    # --- refined retrieval over expanded corpus ---
+    # --- refined retrieval over expanded corpus (papers already fetched by innovator) ---
     state["phase"] = "refined_retrieval"
     snips_refined = retrieve_snippets(state, refined_query)
 

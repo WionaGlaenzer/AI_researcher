@@ -136,8 +136,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--prompt", required=True, help="Research question to investigate")
     ap.add_argument("--log", default=None)
-    ap.add_argument("--initial_papers", type=int, default=5,
-                    help="Number of papers to fetch initially from arXiv. Default: 5")
+    ap.add_argument("--initial_papers", type=int, default=25,
+                    help="Number of papers to fetch initially from arXiv. Default: 25")
     args = ap.parse_args()
     
     # Get project root (parent of scr/)

@@ -46,7 +46,7 @@ def retrieve_snippets(state: Dict[str, Any], query: str, k: int = TOP_K_SNIPPETS
         })
         return []
     
-    q = embed_text(query)
+    q = embed_text(query, task_type="RETRIEVAL_QUERY")
     sims = cosine_sim(q, M)
     idxs = np.argsort(sims)[::-1][:k]
 

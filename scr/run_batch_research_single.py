@@ -1,8 +1,8 @@
 """
-Batch research script that runs two_agent_lab_gemini2 for multiple questions.
+Batch research script that runs one_agent_lab_gemini for multiple questions.
 
 Usage:
-    python run_batch_research.py --questions data/questions.json --num_questions 10 --output data/batch_answers.json
+    python run_batch_research_single.py --questions data/questions.json --num_questions 10 --output data/batch_answers_single.json
 """
 from __future__ import annotations
 import os
@@ -28,8 +28,8 @@ class Tee:
         for f in self.files:
             f.flush()
 
-# Import from two_agent_lab_gemini2
-from two_agent_lab_gemini2 import build_graph
+# Import from one_agent_lab_gemini
+from one_agent_lab_gemini import build_graph
 from config import GEN_MODEL, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP, TOP_K_SNIPPETS, MAX_TOTAL_CHUNKS, MAX_CHARS_PER_FILE
 from file_io import chunk_text
 from text_embeddings import embed_text
@@ -41,17 +41,15 @@ from prompts import KEYWORD_EXTRACTION_SYS
 def run_research_for_question(
     question: str,
     question_id: int,
-    iterations: int = 1,
     initial_papers: int = 5,
     base_run_id: str = None
 ) -> Dict[str, Any]:
     """
-    Run the research process for a single question.
+    Run the single-agent research process for a single question.
     
     Args:
         question: The research question
         question_id: ID of the question (for logging)
-        iterations: Number of iteration cycles
         initial_papers: Number of papers to fetch initially
         base_run_id: Base run ID to use (will append question number)
     
@@ -68,7 +66,7 @@ def run_research_for_question(
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + f"_q{question_id}"
     
     print(f"\n{'='*80}")
-    print(f"Processing Question {question_id}")
+    print(f"Processing Question {question_id} (Single-Agent System)")
     print(f"Question: {question[:100]}...")
     print(f"Run ID: {run_id}")
     print(f"{'='*80}\n")
@@ -91,7 +89,6 @@ def run_research_for_question(
         "chunk_meta": [],
         "turn": 0,
         "iteration": 0,
-        "max_iterations": iterations,
         "messages": [],
         "evidence_log": [],
         "final_report": None,
@@ -157,7 +154,7 @@ def run_research_for_question(
         }
 
     # Run the research graph
-    print(f"[Q{question_id}] Running research graph...")
+    print(f"[Q{question_id}] Running single-agent research graph...")
     app = build_graph()
     state = app.invoke(state)
 
@@ -167,18 +164,8 @@ def run_research_for_question(
     # Save JSON run log for this question
     log_dir = os.path.join(project_root, "output")
     os.makedirs(log_dir, exist_ok=True)
-    log_filename = f"run_log_{run_id}.json"
+    log_filename = f"run_log_single_{run_id}.json"
     log_path = os.path.join(log_dir, log_filename)
-    
-    # Collect all refined queries from messages (for tracking across iterations)
-    refined_queries = []
-    for msg in state.get("messages", []):
-        if msg.get("refined_query"):
-            refined_queries.append({
-                "iteration": msg.get("iteration", 0),
-                "turn": msg.get("turn", 0),
-                "refined_query": msg.get("refined_query")
-            })
     
     log = {
         "run_id": run_id,
@@ -191,13 +178,10 @@ def run_research_for_question(
             "top_k_snippets": TOP_K_SNIPPETS,
             "max_total_chunks": MAX_TOTAL_CHUNKS,
             "max_chars_per_file": MAX_CHARS_PER_FILE,
-            "iterations": iterations,
             "initial_papers": initial_papers,
         },
         "messages": state["messages"],
         "evidence_log": state["evidence_log"],
-        "refined_query": state.get("refined_query"),  # Final refined query (for backward compatibility)
-        "refined_queries": refined_queries,  # All refined queries across iterations
         "final_report": state.get("final_report"),
     }
     with open(log_path, "w", encoding="utf-8") as f:
@@ -212,14 +196,12 @@ def run_research_for_question(
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Run batch research for multiple questions")
+    ap = argparse.ArgumentParser(description="Run batch research for multiple questions (single-agent system)")
     ap.add_argument("--questions", required=True, help="Path to questions.json file")
     ap.add_argument("--num_questions", type=int, default=10, 
                     help="Number of questions to process (default: 10)")
     ap.add_argument("--output", default=None,
-                    help="Output JSON file path (default: data/batch_answers_{timestamp}.json)")
-    ap.add_argument("--iterations", type=int, default=1,
-                    help="Number of iteration cycles per question (default: 1)")
+                    help="Output JSON file path (default: data/batch_answers_single_{timestamp}.json)")
     ap.add_argument("--initial_papers", type=int, default=10,
                     help="Number of papers to fetch initially per question (default: 25)")
     ap.add_argument("--start_from", type=int, default=1,
@@ -252,8 +234,8 @@ def main():
         print("No questions found to process.")
         return
     
-    print(f"\nProcessing {len(questions_to_process)} questions (IDs: {[q.get('id') for q in questions_to_process]})")
-    print(f"Iterations per question: {args.iterations}")
+    print(f"\nProcessing {len(questions_to_process)} questions with SINGLE-AGENT system")
+    print(f"Question IDs: {[q.get('id') for q in questions_to_process]}")
     print(f"Initial papers per question: {args.initial_papers}\n")
     
     # Generate base run ID
@@ -261,7 +243,7 @@ def main():
     
     # Set up output file for logging
     if args.output is None:
-        output_filename = f"batch_answers_{base_run_id}.json"
+        output_filename = f"batch_answers_single_{base_run_id}.json"
         output_path = os.path.join(project_root, "data", output_filename)
     elif not os.path.isabs(args.output):
         output_path = os.path.join(project_root, args.output)
@@ -308,7 +290,6 @@ def main():
                 result = run_research_for_question(
                     question=question,
                     question_id=question_id,
-                    iterations=args.iterations,
                     initial_papers=args.initial_papers,
                     base_run_id=base_run_id
                 )
@@ -330,7 +311,7 @@ def main():
             json.dump(results, f, ensure_ascii=False, indent=4)
         
         print(f"\n{'='*80}")
-        print(f"Batch processing complete!")
+        print(f"Batch processing complete! (Single-Agent System)")
         print(f"Processed {len(results)} questions")
         print(f"Results saved to: {os.path.abspath(output_path)}")
         print(f"Output log saved to: {os.path.abspath(out_file_path)}")

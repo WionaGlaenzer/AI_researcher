@@ -15,15 +15,21 @@ def ensure_gemini():
         raise RuntimeError("Set GEMINI_API_KEY in your environment.")
     genai.configure(api_key=api_key)
 
-def embed_text(text: str) -> np.ndarray:
-    """Return L2-normalized embedding vector for a single string."""
+def embed_text(text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> np.ndarray:
+    """
+    Return L2-normalized embedding vector for a single string.
+    
+    Args:
+        text: The text to embed
+        task_type: Either "RETRIEVAL_DOCUMENT" (default) for documents or "RETRIEVAL_QUERY" for queries
+    """
     ensure_gemini()
-    res = genai.embed_content(model=EMBED_MODEL, content=text)
+    res = genai.embed_content(model=EMBED_MODEL, content=text, task_type=task_type)
     vec = np.array(res["embedding"], dtype=np.float32)
     norm = np.linalg.norm(vec) or 1.0
     return vec / norm
 
-def embed_batch(texts: List[str], batch_size: int = 100, max_workers: int = 10) -> List[np.ndarray]:
+def embed_batch(texts: List[str], batch_size: int = 100, max_workers: int = 10, task_type: str = "RETRIEVAL_DOCUMENT") -> List[np.ndarray]:
     """
     Embed multiple texts in parallel for better performance.
     Uses ThreadPoolExecutor to parallelize API calls with progress tracking.
@@ -32,6 +38,7 @@ def embed_batch(texts: List[str], batch_size: int = 100, max_workers: int = 10) 
         texts: List of text strings to embed
         batch_size: Not used, kept for compatibility
         max_workers: Number of parallel threads (default: 10)
+        task_type: Either "RETRIEVAL_DOCUMENT" (default) for documents or "RETRIEVAL_QUERY" for queries
     
     Returns:
         List of normalized embedding vectors in the same order as input
@@ -46,7 +53,7 @@ def embed_batch(texts: List[str], batch_size: int = 100, max_workers: int = 10) 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit all embedding tasks
         future_to_index = {
-            executor.submit(embed_text, text): i 
+            executor.submit(embed_text, text, task_type): i 
             for i, text in enumerate(texts)
         }
         

@@ -36,13 +36,9 @@ def should_continue(state: Dict[str, Any]) -> str:
     max_iterations = state.get("max_iterations", 1)
     current_iteration = state.get("iteration", 0)
     
-    print(f"[FLOW] Checking if should continue: iteration {current_iteration} / max {max_iterations}")
-    
     if current_iteration < max_iterations:
-        print(f"[FLOW] Continuing to next innovator->critic cycle")
         return "continue"
     else:
-        print(f"[FLOW] Reached max iterations ({max_iterations}), moving to refine_and_synthesize")
         return "end"
 
 def build_graph():
@@ -81,8 +77,8 @@ def main():
     ap.add_argument("--log", default=None)
     ap.add_argument("--iterations", type=int, default=1, 
                     help="Number of iteration cycles (Innovator->Critic->Refine). Default: 1")
-    ap.add_argument("--initial_papers", type=int, default=5,
-                    help="Number of papers to fetch initially from arXiv. Default: 5")
+    ap.add_argument("--initial_papers", type=int, default=10,
+                    help="Number of papers to fetch initially from arXiv. Default: 25")
     args = ap.parse_args()
 
     # Get project root (parent of scr/)
@@ -148,8 +144,7 @@ def main():
     }
 
     # Fetch initial papers from arXiv using the extracted keywords
-    # Prioritize review papers for the initial search since we're creating a literature review
-    print("Fetching initial papers from arXiv (prioritizing review papers)...")
+    print("Fetching initial papers from arXiv...")
     arxiv_output_dir = os.path.join(project_root, "data", "arxiv_output")
     fetched = []
     try:
@@ -158,8 +153,7 @@ def main():
             outdir=arxiv_output_dir,
             max_results=args.initial_papers,
             candidates=25,
-            run_id=run_id,
-            prioritize_reviews=True  # Prioritize review papers for initial search
+            run_id=run_id
         )
         print(f"Fetched {len(fetched)} papers from arXiv")
     except Exception as e:
@@ -215,6 +209,16 @@ def main():
     print("\n=== Final Report ===\n")
     print(state.get("final_report") or "")
 
+    # Collect all refined queries from messages (for tracking across iterations)
+    refined_queries = []
+    for msg in state.get("messages", []):
+        if msg.get("refined_query"):
+            refined_queries.append({
+                "iteration": msg.get("iteration", 0),
+                "turn": msg.get("turn", 0),
+                "refined_query": msg.get("refined_query")
+            })
+    
     # Save JSON log
     log = {
         "run_id": run_id,
@@ -232,26 +236,13 @@ def main():
         },
         "messages": state["messages"],
         "evidence_log": state["evidence_log"],
-        "refined_query": state.get("refined_query"),
+        "refined_query": state.get("refined_query"),  # Final refined query (for backward compatibility)
+        "refined_queries": refined_queries,  # All refined queries across iterations
         "final_report": state.get("final_report"),
     }
     with open(log_path, "w", encoding="utf-8") as f:
         json.dump(log, f, ensure_ascii=False, indent=2)
     print(f"\nSaved JSON log -> {os.path.abspath(log_path)}")
-    
-    # Save research report in answer format
-    answer_data = [
-        {
-            "id": 1,
-            "question": state["research_prompt"],
-            "response": state.get("final_report") or ""
-        }
-    ]
-    answer_filename = f"answer_{run_id}.json"
-    answer_path = os.path.join(project_root, "data", answer_filename)
-    with open(answer_path, "w", encoding="utf-8") as f:
-        json.dump(answer_data, f, ensure_ascii=False, indent=4)
-    print(f"Saved answer JSON -> {os.path.abspath(answer_path)}")
 
 if __name__ == "__main__":
     main()

@@ -134,7 +134,7 @@ def get_more_papers_from_arxiv(
 
     client = arxiv.Client(page_size=25, delay_seconds=3, num_retries=5)
     search = arxiv.Search(query=query, sort_by=arxiv.SortCriterion.Relevance,
-                          max_results=max(1, min(candidates, 25)))
+                          max_results=max(1, min(candidates, 10)))
     try:
         results = list(client.results(search))
         print(f"[DEBUG] Found {len(results)} results from arXiv search")
@@ -153,7 +153,7 @@ def get_more_papers_from_arxiv(
             core_query = f"({core_query}) AND {review_filter}"
         print(f"[DEBUG] Simplified query (no date filter, reviews={prioritize_reviews}): {core_query}")
         search = arxiv.Search(query=core_query, sort_by=arxiv.SortCriterion.Relevance,
-                              max_results=max(1, min(candidates, 25)))
+                              max_results=max(1, min(candidates, 10)))
         try:
             results = list(client.results(search))
             print(f"[DEBUG] Found {len(results)} results without date filter")

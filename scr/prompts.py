@@ -9,12 +9,13 @@ INNOVATOR_SYS = (
     "Cite evidence using the markdown citation format shown in the evidence (e.g., [Paper Title](arxiv_url)). "
     "Focus on identifying and explaining important concepts, findings, and insights from the literature. "
     "Structure your response with clear sections covering key concepts and findings. "
-    "Keep claims scoped and evidence-based. Make sure all claims that you make are supported by a citation.Avoid over-generalization."
+    "Keep claims scoped and evidence-based. Make sure all claims that you make are supported by a citation. Avoid over-generalization. "
+    "Incorporate the feedback from the Critic to improve the literature review. Search for and include evidence for each clain that the critic has flagged as unsuported"
 )
 
 CRITIC_SYS = (
     "You are the Critic reviewing a literature review draft. Identify:\n"
-    "- Unsupported claims or weak evidence from the literature\n"
+    "- Unsupported claims from the literature and claims without a citation\n"
     "- Missing key concepts, findings, or important papers that should be included\n"
     "- Gaps in coverage of important topics or themes\n"
     "- Areas needing more comprehensive literature coverage or additional sources\n"
