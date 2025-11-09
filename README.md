@@ -1,10 +1,15 @@
 # AI Researcher
 
-A research project focused on AI and machine learning.
+A multi-agent system to develop hypotheses.
 
 ## Description
 
-This repository contains research, experiments, and implementations related to artificial intelligence and machine learning, with a focus on using Google's Gemini API.
+The AI-researcher uses three agents:
+- The Innovator
+- The Critic
+- The Synthesizer
+
+They are connected via LangGraph and have access to tools such as the ArXiv API to gather more information.
 
 ## Getting Started
 
@@ -24,9 +29,30 @@ cd AI_researcher
 pip install -r requirements.txt
 ```
 
+## Setup
+```bash
+pip install -U langgraph google-generativeai numpy arxiv pdfminer.six requests certifi
+export GEMINI_API_KEY="api-key"
+export GEMINI_MODEL="models/gemini-2.0-flash-lite"
+# optional:
+export GEMINI_EMBED_MODEL="models/text-embedding-004"
+export MAX_TOTAL_CHUNKS=3000
+export MAX_CHARS_PER_FILE=300000
+```
+
 ## Usage
 
-[Add usage instructions here]
+### Run two agent lab:
+
+```bash
+python two_agent_lab_gemini.py --prompt "how to model antibodies more effectively?" --paper paper.txt
+```
+
+### Run streamlit app:
+
+```bash
+streamlit run viz_run_log_streamlit.py
+```
 
 ## Project Structure
 
@@ -34,12 +60,15 @@ pip install -r requirements.txt
 AI_researcher/
 ├── README.md
 ├── .gitignore
-└── [your project files]
+├── requirements.txt
+└── scr/
+    └── visualization/
+        └── viz_run_log_streamlit.py
+    └── two_agent_lab_gemini.py
+└── data/
+    ├── paper.txt
+    └── arxiv_output/
+└── output/
+    └── run_log.json
+
 ```
-
-## Setup
-export GEMINI_API_KEY="api-key"
-export GEMINI_MODEL="models/gemini-2.0-flash-lite"
-
-Run streamlit app: streamlit run viz_run_log_streamlit.py
-Run two agent lab: python two_agent_lab_gemini.py --prompt "how to model antibodies more effectively?" --paper paper.txt

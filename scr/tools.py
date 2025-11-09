@@ -9,6 +9,10 @@ import arxiv
 from arxiv import UnexpectedEmptyPageError
 from pdfminer.high_level import extract_text
 
+from config import MAX_TOTAL_CHUNKS, MAX_CHARS_PER_FILE
+from file_io import chunk_text
+from text_embeddings import embed_text
+
 # ---------- helpers ----------
 _STOPWORDS = {
     "the","a","an","and","or","but","if","then","else","of","for","to","in","on","at","by",
@@ -60,14 +64,31 @@ def _download_pdf(url: str, out_path: str, timeout=30):
 # ---------- public API ----------
 def get_more_papers_from_arxiv(
     prompt: str,
-    outdir: str = "arxiv_output",
+    outdir: str = None,
     max_results: int = 5,
-    candidates: int = 25
+    candidates: int = 25,
+    run_id: str = None
 ) -> List[Dict[str, Any]]:
     """
     Fetch arXiv papers (last 5y) by abstract keywords, download PDFs, convert to .txt.
     Returns: [{arxiv_id,title,url,pdf_url,pdf_path,txt_path}, ...]
+    
+    Args:
+        prompt: Search query
+        outdir: Base output directory (default: data/arxiv_output)
+        max_results: Maximum number of papers to download
+        candidates: Number of candidates to scan
+        run_id: Optional run ID to create a subdirectory for this run
     """
+    if outdir is None:
+        # Get project root (parent of scr/)
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        outdir = os.path.join(project_root, "data", "arxiv_output")
+    
+    # If run_id is provided, create a subdirectory for this run
+    if run_id:
+        outdir = os.path.join(outdir, run_id)
+    
     query = _build_query(prompt)
     out_pdf = os.path.join(outdir, "pdf")
     out_txt = os.path.join(outdir, "txt")
@@ -251,5 +272,94 @@ def ingest_txts_into_state_with_meta(
         )
     return added
 
+# -----------------------
+# Fallback: ingest abstracts when TXT fails
+# -----------------------
+def ingest_abstracts_into_state(state: Dict[str, Any], papers: List[Dict[str, Any]]) -> int:
+    """
+    If PDFs couldn't be converted to TXT, at least ingest abstracts (if provided by tools).
+    Also appends chunk_meta entries tagged as 'abstract'.
+    Returns number of chunks added.
+    """
+    abstracts = []
+    for p in papers:
+        abs_txt = p.get("abstract")
+        if abs_txt and isinstance(abs_txt, str) and abs_txt.strip():
+            abstracts.append((p, abs_txt.strip()))
+    if not abstracts:
+        return 0
 
-__all__ = ["get_more_papers_from_arxiv", "ingest_txts_into_state", "ingest_txts_into_state_with_meta"]
+    added = 0
+    for p, abs_txt in abstracts:
+        local_idx = 0
+        for ch in chunk_text(abs_txt):
+            if len(state["paper_chunks"]) >= MAX_TOTAL_CHUNKS:
+                return added
+            state["paper_chunks"].append(ch)
+            vec = embed_text(ch)
+            if state["chunk_embeddings"] is None:
+                state["chunk_embeddings"] = np.expand_dims(vec, 0)
+            else:
+                state["chunk_embeddings"] = np.vstack([state["chunk_embeddings"], vec])
+
+            # meta
+            state["chunk_meta"].append({
+                "doc_id": f"arxiv::{p.get('arxiv_id') or os.path.basename(p.get('txt_path') or '')}::abstract",
+                "origin": "arxiv_abstract",
+                "title": p.get("title") or "arXiv abstract",
+                "arxiv_id": p.get("arxiv_id"),
+                "url": p.get("url"),
+                "txt_path": p.get("txt_path"),
+                "chunk_local_idx": local_idx,
+            })
+            local_idx += 1
+            added += 1
+    return added
+
+def append_meta_for_txts(state: Dict[str, Any], papers: List[Dict[str, Any]], newly_added_chunks: int):
+    """
+    After ingest_txts_into_state (which does not add metadata), mirror its chunking order and
+    append matching chunk_meta entries for exactly 'newly_added_chunks' chunks.
+    This keeps meta aligned with embeddings/chunks even with caps.
+    """
+    if newly_added_chunks <= 0:
+        return
+    remaining = newly_added_chunks
+    for p in papers:
+        txt = p.get("txt_path")
+        if not txt or not os.path.exists(txt):
+            continue
+        try:
+            with open(txt, "r", encoding="utf-8", errors="ignore") as f:
+                text = f.read()
+        except Exception:
+            continue
+        if len(text) > MAX_CHARS_PER_FILE:
+            text = text[:MAX_CHARS_PER_FILE]
+
+        local_idx = 0
+        for _ch in chunk_text(text):
+            if remaining <= 0:
+                return
+            state["chunk_meta"].append({
+                "doc_id": f"arxiv::{p.get('arxiv_id') or os.path.basename(txt)}",
+                "origin": "arxiv",
+                "title": p.get("title") or os.path.basename(txt),
+                "arxiv_id": p.get("arxiv_id"),
+                "url": p.get("url"),
+                "txt_path": os.path.abspath(txt),
+                "chunk_local_idx": local_idx,
+            })
+            local_idx += 1
+            remaining -= 1
+            if len(state["paper_chunks"]) >= MAX_TOTAL_CHUNKS:
+                return
+
+
+__all__ = [
+    "get_more_papers_from_arxiv", 
+    "ingest_txts_into_state", 
+    "ingest_txts_into_state_with_meta",
+    "ingest_abstracts_into_state",
+    "append_meta_for_txts"
+]

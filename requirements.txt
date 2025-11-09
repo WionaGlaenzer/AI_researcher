@@ -1,1 +1,12 @@
 google-generativeai
+langgraph
+numpy
+arxiv
+pdfminer.six
+requests
+certifi
+scikit-learn
+streamlit
+pandas
+plotly
+graphviz

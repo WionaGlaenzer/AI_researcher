@@ -85,12 +85,22 @@ def main():
         description="Fetch arXiv papers (last 5 years) matching abstract keywords and convert PDFs to .txt"
     )
     parser.add_argument("prompt", help="Free-form prompt, e.g. few-shot learning for time series")
-    parser.add_argument("--outdir", default="arxiv_output", help="Output folder (default: arxiv_output)")
+    parser.add_argument("--outdir", default=None, help="Output folder (default: data/arxiv_output)")
     parser.add_argument("--max-results", type=int, default=10, help="How many to download (default: 10)")
     # Keep candidates to a single page to avoid the 'UnexpectedEmptyPageError' page jump
     parser.add_argument("--candidates", type=int, default=25,
                         help="How many results to scan before filtering (default: 25)")
     args = parser.parse_args()
+
+    # Resolve output directory
+    if args.outdir is None:
+        # Get project root (parent of scr/)
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        args.outdir = os.path.join(project_root, "data", "arxiv_output")
+    elif not os.path.isabs(args.outdir):
+        # If relative path, make it relative to project root
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        args.outdir = os.path.join(project_root, args.outdir)
 
     keywords = extract_keywords(args.prompt)
     query = build_query(keywords)

@@ -202,7 +202,11 @@ st.title("Two-Agent Run Log Visualizer")
 
 left, right = st.columns([2, 3])
 with left:
-    default_path = "run_log.json"
+    # Get project root (parent of scr/)
+    import sys
+    from pathlib import Path
+    project_root = Path(__file__).parent.parent.parent
+    default_path = str(project_root / "output" / "run_log.json")
     run_file = st.text_input("Path to run_log.json", value=default_path)
     uploaded = st.file_uploader("...or upload a run_log.json", type=["json"])
 
