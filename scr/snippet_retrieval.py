@@ -9,8 +9,44 @@ from file_io import approx_char_start
 # Retrieval helpers
 # -----------------------
 def retrieve_snippets(state: Dict[str, Any], query: str, k: int = TOP_K_SNIPPETS):
+    M = state.get("chunk_embeddings")
+    chunks = state.get("paper_chunks", [])
+    
+    # Handle empty state - no chunks or embeddings available
+    if M is None:
+        state["evidence_log"].append({
+            "turn": state.get("turn", 0),
+            "phase": state.get("phase", "unspecified"),
+            "query": query,
+            "top_snippets": [],
+            "error": "No embeddings available for retrieval",
+        })
+        return []
+    
+    # Check if M is a numpy array and has valid shape
+    if hasattr(M, 'shape'):
+        # Check if it's a 0-d array (scalar) or has 0 rows
+        if M.shape == () or (len(M.shape) > 0 and M.shape[0] == 0):
+            state["evidence_log"].append({
+                "turn": state.get("turn", 0),
+                "phase": state.get("phase", "unspecified"),
+                "query": query,
+                "top_snippets": [],
+                "error": "Empty embeddings matrix",
+            })
+            return []
+    
+    if len(chunks) == 0:
+        state["evidence_log"].append({
+            "turn": state.get("turn", 0),
+            "phase": state.get("phase", "unspecified"),
+            "query": query,
+            "top_snippets": [],
+            "error": "No chunks available for retrieval",
+        })
+        return []
+    
     q = embed_text(query)
-    M = state["chunk_embeddings"]
     sims = cosine_sim(q, M)
     idxs = np.argsort(sims)[::-1][:k]
 
@@ -46,13 +82,34 @@ def retrieve_snippets(state: Dict[str, Any], query: str, k: int = TOP_K_SNIPPETS
     })
     return results
 
+def _build_citation_link(meta: Dict[str, Any]) -> str:
+    """Build a markdown citation link in format [Title](url)"""
+    title = meta.get("title") or meta.get("arxiv_id") or "Unknown Source"
+    url = meta.get("url")
+    
+    # Convert arxiv URLs to HTML format if we have an arxiv_id
+    if meta.get("arxiv_id"):
+        arxiv_id = meta.get("arxiv_id")
+        # Convert to HTML format (e.g., 2204.09140v2 -> https://arxiv.org/html/2204.09140v2)
+        url = f"https://arxiv.org/html/{arxiv_id}"
+    elif url:
+        # If we have a URL but it's in abs format, convert to html format
+        # Match arxiv.org/abs/ pattern and convert to html
+        url = re.sub(r'https?://arxiv\.org/abs/([^/]+)', r'https://arxiv.org/html/\1', url)
+    
+    # If still no URL, use a placeholder
+    if not url:
+        url = "#"
+    
+    return f"[{title}]({url})"
+
 def format_snippets(snips):
     lines = []
     for rank, (idx, text, score, meta) in enumerate(snips, 1):
-        src = meta.get("arxiv_id") or meta.get("title") or meta.get("doc_id") or "unknown"
-        src_short = src if isinstance(src, str) else "unknown"
+        citation = _build_citation_link(meta)
+        text_preview = re.sub(r'\s+', ' ', text)[:300]
         lines.append(
-            f"S#{rank} [chunk {idx}, score {score:.3f}, src {src_short}]: {re.sub(r'\\s+',' ',text)[:300]}"
+            f"{citation} [chunk {idx}, score {score:.3f}]: {text_preview}"
         )
     return "\n".join(lines)
 

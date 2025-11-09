@@ -14,6 +14,12 @@ from text_embeddings import embed_text
 def innovator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     current_iteration = state.get("iteration", 0)
     max_iterations = state.get("max_iterations", 1)
+    current_turn = state.get("turn", 0)
+    
+    print(f"\n{'='*60}")
+    print(f"[FLOW] Turn {current_turn} - INNOVATOR NODE")
+    print(f"[FLOW] Iteration {current_iteration + 1}/{max_iterations}")
+    print(f"{'='*60}")
     
     # Determine phase based on iteration
     if current_iteration == 0:
@@ -33,7 +39,9 @@ def innovator_node(state: Dict[str, Any]) -> Dict[str, Any]:
         if last_synthesis:
             query = f"{state['research_prompt']}\n\nPrevious synthesis: {last_synthesis[:500]}"
     
+    print(f"[INNOVATOR] Retrieving snippets with query: {query[:100]}...")
     snips = retrieve_snippets(state, query)
+    print(f"[INNOVATOR] Retrieved {len(snips)} snippets")
     
     # Build context message
     context_parts = [f"Research prompt: {state['research_prompt']}"]
@@ -45,12 +53,14 @@ def innovator_node(state: Dict[str, Any]) -> Dict[str, Any]:
             None
         )
         if last_crit:
-            context_parts.append(f"\nPrevious Critic feedback:\n{last_crit}")
+            # Truncate critic feedback to avoid overly long inputs
+            truncated_crit = last_crit[:2000] + ("..." if len(last_crit) > 2000 else "")
+            context_parts.append(f"\nPrevious Critic feedback:\n{truncated_crit}")
     
     context_parts.append(f"\n\nEvidence:\n{format_snippets(snips)}")
     user = "".join(context_parts)
     
-    out = call_llm(INNOVATOR_SYS, user)
+    out = call_llm(INNOVATOR_SYS, user, agent_name="INNOVATOR")
 
     state["messages"].append({
         "role": "Innovator",
@@ -60,16 +70,31 @@ def innovator_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "snippets": build_snippet_meta(snips),
     })
     state["turn"] += 1
+    print(f"[FLOW] Turn {current_turn} complete - Moving to CRITIC")
     return state
 
 def critic_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    current_turn = state.get("turn", 0)
+    current_iteration = state.get("iteration", 0)
+    
+    print(f"\n{'='*60}")
+    print(f"[FLOW] Turn {current_turn} - CRITIC NODE")
+    print(f"[FLOW] Iteration {current_iteration + 1}")
+    print(f"{'='*60}")
+    
     state["phase"] = "critic_feedback"
     innov = state["messages"][-1]["content"]
+    
+    # Truncate innovator content if too long
+    innov_truncated = innov[:3000] + ("..." if len(innov) > 3000 else "")
+    
+    print(f"[CRITIC] Analyzing innovator output ({len(innov):,} chars)")
     snips = retrieve_snippets(state, innov)
-    user = f"Innovator said:\n{innov}\n\nEvidence:\n{format_snippets(snips)}"
-    out = call_llm(CRITIC_SYS, user)
+    print(f"[CRITIC] Retrieved {len(snips)} snippets for analysis")
+    
+    user = f"Innovator said:\n{innov_truncated}\n\nEvidence:\n{format_snippets(snips)}"
+    out = call_llm(CRITIC_SYS, user, agent_name="CRITIC")
 
-    current_iteration = state.get("iteration", 0)
     state["messages"].append({
         "role": "Critic",
         "turn": state["turn"],
@@ -78,24 +103,45 @@ def critic_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "snippets": build_snippet_meta(snips),
     })
     state["turn"] += 1
+    
+    # Increment iteration after each innovator->critic cycle completes
+    # This prevents infinite loops when max_iterations > 1
+    state["iteration"] = current_iteration + 1
+    print(f"[FLOW] Turn {current_turn} complete - Iteration {current_iteration + 1} of {state.get('max_iterations', 1)} complete")
+    print(f"[FLOW] Moving to next step (will check if more iterations needed)")
     return state
 
 def refine_and_synthesize_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    current_turn = state.get("turn", 0)
+    current_iteration = state.get("iteration", 0)
+    
+    print(f"\n{'='*60}")
+    print(f"[FLOW] Turn {current_turn} - REFINE & SYNTHESIZE NODE")
+    print(f"[FLOW] Iteration {current_iteration + 1}")
+    print(f"{'='*60}")
+    
     # --- write refined query ---
     state["phase"] = "refine_query"
     last_innov = next(m for m in reversed(state["messages"]) if m["role"] == "Innovator")["content"]
     last_crit  = next(m for m in reversed(state["messages"]) if m["role"] == "Critic")["content"]
+    
+    # Truncate inputs for query refinement
+    innov_truncated = last_innov[:2000] + ("..." if len(last_innov) > 2000 else "")
+    crit_truncated = last_crit[:2000] + ("..." if len(last_crit) > 2000 else "")
 
+    print(f"[REFINER] Creating refined query from innovator ({len(last_innov):,} chars) and critic ({len(last_crit):,} chars)")
     refined_query = call_llm(
         REFINER_SYS,
         (
             f"Original research prompt: {state['research_prompt']}\n\n"
-            f"Latest Innovator draft:\n{last_innov}\n\n"
-            f"Critic feedback:\n{last_crit}\n\n"
+            f"Latest Innovator draft:\n{innov_truncated}\n\n"
+            f"Critic feedback:\n{crit_truncated}\n\n"
             f"Write a single refined retrieval query:"
         ),
+        agent_name="REFINER"
     )
     state["refined_query"] = refined_query
+    print(f"[REFINER] Refined query: {refined_query}")
 
     # --- fetch from arXiv ---
     fetched = []
@@ -164,16 +210,21 @@ def refine_and_synthesize_node(state: Dict[str, Any]) -> Dict[str, Any]:
     state["phase"] = "refined_retrieval"
     snips_refined = retrieve_snippets(state, refined_query)
 
-    # --- synthesize final report ---
+    # --- synthesize final research report ---
     state["phase"] = "synthesis"
     evidence_block = format_snippets(snips_refined)
+    print(f"[SYNTHESIS] Creating final report with {len(snips_refined)} refined snippets")
+    print(f"[SYNTHESIS] Evidence block length: {len(evidence_block):,} chars")
+    
     user = (
-        f"Prompt: {state['research_prompt']}\n\n"
+        f"Research Question: {state['research_prompt']}\n\n"
         f"Refined retrieval query: {refined_query}\n\n"
         f"Refined Evidence:\n{evidence_block}\n\n"
-        f"Use the refined evidence plus prior discussion to craft the improved final report."
+        f"Use the refined evidence plus prior discussion to craft a comprehensive literature review "
+        f"that summarizes and synthesizes existing knowledge to fully address the research question. "
+        f"Focus on important concepts, findings, and insights from the literature."
     )
-    out = call_llm(SYNTHESIS_SYS, user)
+    out = call_llm(SYNTHESIS_SYS, user, agent_name="SYNTHESIS")
 
     current_iteration = state.get("iteration", 0)
     state["messages"].append({
@@ -188,7 +239,10 @@ def refine_and_synthesize_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Update final report (will be overwritten on each iteration, keeping the last one)
     state["final_report"] = out
     
-    # Increment iteration counter at the end of refine_and_synthesize
-    state["iteration"] = current_iteration + 1
+    # Note: iteration is already incremented in critic_node, so we don't increment here
+    # This node runs once per iteration cycle, after the innovator->critic loop completes
     state["turn"] += 1
+    report_words = len(out.split())
+    print(f"[FLOW] Turn {current_turn} complete - Refine & Synthesize finished for iteration {current_iteration + 1}")
+    print(f"[FLOW] Final report length: {len(out):,} chars (~{report_words:,} words, target: ~7000 words)")
     return state
